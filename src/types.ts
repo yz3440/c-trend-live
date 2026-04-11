@@ -11,7 +11,6 @@ export interface RuttEtraParams {
   tintColor: string;
   glow: number;
   resolution: number;
-  wireframe: boolean;
   weightR: number;
   weightG: number;
   weightB: number;
@@ -28,8 +27,13 @@ export interface RuttEtraParams {
 
 export const DEFAULT_PARAMS: RuttEtraParams = {
   displacement: 2.0,
-  lineCount: 512,
-  lineWidth: 0.4,
+  // Number of scan-line *rows* in the geometry. With real line geometry the
+  // sweet spot is much lower than the old fragment-stripe trick (which could
+  // afford 512 because the lines were just texture-space stripes on one mesh).
+  lineCount: 200,
+  // Line thickness in screen pixels (LineMaterial worldUnits = false). Maps
+  // directly to Felix Turner's "lineThickness" reference param.
+  lineWidth: 1.5,
   // Solid: each line occludes the lines behind it (depth-tested NormalBlending).
   // Additive: lines sum into the framebuffer for a glowy stack — washes to
   // white from the side because of overdraw, but matches the original look.
@@ -38,8 +42,9 @@ export const DEFAULT_PARAMS: RuttEtraParams = {
   colorMix: 1.0,
   tintColor: "#00ff88",
   glow: 0.3,
-  resolution: 256,
-  wireframe: false,
+  // Vertex samples per scan line (more = smoother depth profile along each
+  // line). 384 ≈ enough to track per-pixel detail of a 720p source.
+  resolution: 384,
   weightR: 0.299,
   weightG: 0.587,
   weightB: 0.114,

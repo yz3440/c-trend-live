@@ -117,6 +117,13 @@ effect(() => {
     composer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    // LineMaterial computes pixel-thickness by dividing by resolution.y, so it
+    // needs the framebuffer (drawing-buffer) size, not CSS size. setSize above
+    // already accounts for pixelRatio internally.
+    if (ruttEtra) {
+      const dpr = renderer.getPixelRatio();
+      ruttEtra.setRenderResolution(w * dpr, h * dpr);
+    }
   };
   resize();
   const ro = new ResizeObserver(resize);
@@ -239,6 +246,14 @@ async function loadStream(
   currentPlayer = player;
   currentPlayerSig.value = player;
   ruttEtra = new RuttEtra(player.video);
+  // Seed the line material's pixel resolution from the live drawing buffer so
+  // line widths render correctly the very first frame (the resize observer
+  // would only fire on subsequent layout changes).
+  {
+    const size = new THREE.Vector2();
+    renderer.getDrawingBufferSize(size);
+    ruttEtra.setRenderResolution(size.x, size.y);
+  }
   scene.add(ruttEtra.mesh);
 
   // Sync params to the brand-new instance.

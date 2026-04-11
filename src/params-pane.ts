@@ -72,15 +72,11 @@ export function createParamsPane(
   bind(waveFolder, "sineAmp",   { min: 0, max: 2, step: 0.001, label: "Amplitude" });
   bind(waveFolder, "sineSpeed", { min: -5, max: 5, step: 0.01, label: "Speed" });
 
-  // Geometry
-  const geoFolder = pane.addFolder({ title: "Geometry" });
-  bind(geoFolder, "resolution", { min: 64, max: 1024, step: 1, label: "Grid Res" });
-  bind(geoFolder, "wireframe", { label: "Wireframe" });
-
-  // Lines
+  // Lines — count = number of scan rows, samples = vertices per row, width = px
   const linesFolder = pane.addFolder({ title: "Lines" });
-  bind(linesFolder, "lineCount", { min: 10, max: 1024, step: 1, label: "Count" });
-  bind(linesFolder, "lineWidth", { min: 0.01, max: 1, step: 0.01, label: "Width" });
+  bind(linesFolder, "lineCount",  { min: 10, max: 1024, step: 1, label: "Count" });
+  bind(linesFolder, "resolution", { min: 32, max: 1024, step: 1, label: "Samples / Line" });
+  bind(linesFolder, "lineWidth",  { min: 0.5, max: 10, step: 0.1, label: "Width (px)" });
   bind(linesFolder, "blendMode", {
     label: "Blending",
     options: { Solid: "solid", Additive: "additive" },
