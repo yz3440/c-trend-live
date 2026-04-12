@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import { paramsMountEl } from "../store";
+import { FONT_BASE } from "./tokens";
 
 /**
  * The right grid cell that hosts the Tweakpane shader controls.
@@ -24,7 +25,7 @@ export function ParamsPanel() {
         background: "rgba(12, 12, 14, 0.95)",
         borderLeft: "1px solid rgba(255, 255, 255, 0.06)",
         color: "rgba(255, 255, 255, 0.9)",
-        font: "12px/1.4 -apple-system, system-ui, sans-serif",
+        font: FONT_BASE,
         overflowY: "auto",
         overflowX: "hidden",
       }}
@@ -35,7 +36,7 @@ export function ParamsPanel() {
           fontSize: 11,
           letterSpacing: 0.5,
           textTransform: "uppercase",
-          opacity: 0.5,
+          color: "rgba(255, 255, 255, 0.5)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
         }}
       >

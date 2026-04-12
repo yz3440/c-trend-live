@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "preact/hooks";
 import { selectedCamera } from "../store";
+import { RADIUS, FONT_MONO_SMALL, BLUR } from "./tokens";
 
 /**
  * Live local-time readout for the selected camera. Updates once per second.
@@ -56,12 +57,12 @@ export function LocalTime() {
         marginTop: 6,
         padding: "4px 8px",
         background: "rgba(12, 12, 14, 0.55)",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        borderRadius: 3,
-        font: "11px/1 ui-monospace, SFMono-Regular, Menlo, monospace",
+        border: "1px solid rgba(255, 255, 255, 0.10)",
+        borderRadius: RADIUS,
+        font: FONT_MONO_SMALL,
         color: "rgba(255, 255, 255, 0.9)",
-        backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
+        backdropFilter: BLUR,
+        WebkitBackdropFilter: BLUR,
         width: "fit-content",
         pointerEvents: "none",
       }}

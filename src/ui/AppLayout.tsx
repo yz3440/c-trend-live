@@ -4,6 +4,7 @@ import { Splitter } from "./Splitter";
 import { CanvasMount } from "./CanvasMount";
 import { ParamsPanel } from "./ParamsPanel";
 import { StatusBar } from "./StatusBar";
+import { FONT_BASE, FONT_SMALL, RADIUS, BLUR } from "./tokens";
 
 /**
  * The full-window grid:
@@ -41,7 +42,7 @@ export function AppLayout() {
         gridTemplateColumns: "100%",
         background: "#000",
         color: "rgba(255, 255, 255, 0.9)",
-        font: "12px/1.4 -apple-system, system-ui, sans-serif",
+        font: FONT_BASE,
       }}
     >
       <div
@@ -70,13 +71,13 @@ export function AppLayout() {
               zIndex: 10,
               padding: "6px 10px",
               background: "rgba(12, 12, 14, 0.55)",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
-              borderRadius: 4,
-              color: "rgba(255, 255, 255, 0.85)",
-              font: "11px/1 -apple-system, system-ui, sans-serif",
+              border: "1px solid rgba(255, 255, 255, 0.10)",
+              borderRadius: RADIUS,
+              color: "rgba(255, 255, 255, 0.9)",
+              font: FONT_SMALL,
               cursor: "pointer",
-              backdropFilter: "blur(6px)",
-              WebkitBackdropFilter: "blur(6px)",
+              backdropFilter: BLUR,
+              WebkitBackdropFilter: BLUR,
             }}
             title="Exit present mode (Esc or P)"
           >

@@ -1,6 +1,7 @@
 import { visibleCameras, activeSrcId, sourceStatus, sourceError } from "../store";
 import { CameraListItem } from "./CameraListItem";
 
+
 export function CameraList() {
   const cams = visibleCameras.value;
   const sid = activeSrcId.value;
@@ -16,7 +17,7 @@ export function CameraList() {
       }}
     >
       {status === "loading" && (
-        <div style={{ padding: 10, opacity: 0.6 }}>Loading…</div>
+        <div style={{ padding: 10, color: "rgba(255, 255, 255, 0.5)" }}>Loading…</div>
       )}
       {status === "error" && (
         <div style={{ padding: 10, color: "#ff6b6b" }}>
@@ -24,7 +25,7 @@ export function CameraList() {
         </div>
       )}
       {status === "ready" && cams.length === 0 && (
-        <div style={{ padding: 10, opacity: 0.5 }}>No cameras match.</div>
+        <div style={{ padding: 10, color: "rgba(255, 255, 255, 0.5)" }}>No cameras match.</div>
       )}
       {cams.map((c) => (
         <CameraListItem key={`${c.sourceId}:${c.id}`} cam={c} />

@@ -67,17 +67,17 @@ export function Splitter({ width, side, min = 160, max = 600 }: SplitterProps) {
       style={{
         width: 6,
         height: "100%",
-        background: "rgba(255, 255, 255, 0.04)",
+        background: "rgba(255, 255, 255, 0.06)",
         cursor: "col-resize",
         userSelect: "none",
         touchAction: "none",
         flexShrink: 0,
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 255, 255, 0.14)";
+        (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 255, 255, 0.10)";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 255, 255, 0.04)";
+        (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 255, 255, 0.06)";
       }}
     />
   );

@@ -1,5 +1,6 @@
 import type { Camera } from "../sources/types";
 import { selectedCamId, thumbnails } from "../store";
+import { RADIUS } from "./tokens";
 
 export function CameraListItem({ cam }: { cam: Camera }) {
   const isSelected = selectedCamId.value === cam.id;
@@ -37,7 +38,7 @@ export function CameraListItem({ cam }: { cam: Camera }) {
             width: 36,
             height: 24,
             objectFit: "cover",
-            borderRadius: 2,
+            borderRadius: RADIUS,
             background: "#111",
             flexShrink: 0,
           }}
@@ -48,7 +49,7 @@ export function CameraListItem({ cam }: { cam: Camera }) {
             width: 36,
             height: 24,
             background: "#111",
-            borderRadius: 2,
+            borderRadius: RADIUS,
             flexShrink: 0,
           }}
         />
@@ -74,7 +75,7 @@ export function CameraListItem({ cam }: { cam: Camera }) {
           <span
             style={{
               fontSize: 10,
-              opacity: 0.55,
+              color: "rgba(255, 255, 255, 0.5)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",

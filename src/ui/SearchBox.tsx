@@ -1,4 +1,5 @@
 import { search } from "../store";
+import { RADIUS } from "./tokens";
 
 export function SearchBox() {
   return (
@@ -13,9 +14,9 @@ export function SearchBox() {
         style={{
           width: "100%",
           padding: "6px 8px",
-          background: "rgba(0, 0, 0, 0.4)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          borderRadius: 4,
+          background: "rgba(0, 0, 0, 0.35)",
+          border: "1px solid rgba(255, 255, 255, 0.10)",
+          borderRadius: RADIUS,
           color: "inherit",
           font: "inherit",
           outline: "none",
