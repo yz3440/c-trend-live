@@ -8,8 +8,11 @@
 // warp → displacement → wave → twist pipeline.
 
 uniform sampler2D uVideoTexture;
-uniform float uDisplacement;
-uniform vec3 uChannelWeights;
+uniform float uDisplacement;   // max height (signed) at lum = 1
+uniform float uExposure;       // manual EV stop applied before scene remap
+uniform float uSceneMin;       // input value mapped to lum = 0 (auto or 0.0)
+uniform float uSceneMax;       // input value mapped to lum = 1 (auto or 1.0)
+uniform vec3 uChannelWeights;  // RGB weights — magnitudes act as ratios
 uniform float uVideoAspect;
 uniform float uTime;
 
@@ -70,8 +73,22 @@ void warpSphereRE(vec2 uv, out vec3 pos, out vec3 nrm) {
 vec3 ruttEtraDeform(vec2 uv, out vec3 colOut, out float lumOut) {
   vec4 texel = texture2D(uVideoTexture, uv);
   colOut = texel.rgb;
+
+  // ---- Luminance pipeline -------------------------------------------------
+  // 1. Weighted RGB (weights may be negative — supports e.g. R-minus-G isolation)
+  // 2. Normalize by sum of weight magnitudes so the weights act as relative
+  //    ratios rather than absolute scalers — set wR = 2 alone, you still get a
+  //    [-1, 1] signal, not [0, 2].
+  // 3. Apply exposure (EV stops, 2^x multiplier).
+  // 4. Remap [uSceneMin, uSceneMax] → [0, 1] (NOT clamped — overshoots beyond
+  //    the smoothed range produce signed displacement, which is desirable).
   float raw = dot(texel.rgb, uChannelWeights);
-  lumOut = raw;
+  float weightMag = max(abs(uChannelWeights.x) + abs(uChannelWeights.y) + abs(uChannelWeights.z), 1e-4);
+  float normalized = raw / weightMag;
+  float exposed = normalized * exp2(uExposure);
+  float range = max(uSceneMax - uSceneMin, 1e-4);
+  float lum = (exposed - uSceneMin) / range;
+  lumOut = lum;
 
   // Flat reference position — same UV→XY mapping as the old PlaneGeometry,
   // centered on origin and scaled by aspect.
@@ -93,9 +110,11 @@ vec3 ruttEtraDeform(vec2 uv, out vec3 colOut, out float lumOut) {
   vec3 baseNormal = normalize(mix(vec3(0.0, 0.0, 1.0), warpedNormal, uWarpAmount));
 
   // ---- 3. Rutt/Etra displacement (along base normal) ----------------------
-  // Negative amount inverts the brightness mapping so dark pixels protrude.
-  float displaceLum = uDisplacement >= 0.0 ? raw : (1.0 - raw);
-  basePos += baseNormal * (displaceLum * abs(uDisplacement));
+  // Signed lum × signed maxHeight: bright pushes one way, dark pushes the
+  // other (depending on maxHeight sign). With auto-exposure on, sceneMin/Max
+  // bracket the live frame, so the brightest pixel currently visible always
+  // displaces by exactly +uDisplacement.
+  basePos += baseNormal * (lum * uDisplacement);
 
   // ---- 4. Sine wave modulation --------------------------------------------
   float sineMod = uSineAmp

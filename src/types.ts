@@ -2,14 +2,27 @@ export type WarpMode = "none" | "polar" | "cylinder" | "sphere";
 export type BlendMode = "additive" | "solid";
 
 export interface RuttEtraParams {
+  // Max line height (signed). Multiplies the normalized luminance to produce
+  // the per-vertex offset along the surface normal. Positive: bright pushes
+  // out / dark pushes in. Negative: inverted.
   displacement: number;
+  // Manual exposure stop. Multiplies the normalized luminance by 2^exposure
+  // before the scene-range remap. 0 = unity gain.
+  exposure: number;
+  // One-shot calibration. When toggled on (or when a stream switches), the
+  // first frame with valid pixels is sampled into a hidden 32×32 canvas and
+  // the resulting min/max are written directly to uSceneMin / uSceneMax.
+  // Held fixed afterwards — no temporal drift, no per-frame work. Toggle off
+  // to revert to the identity remap (0 → 1).
+  autoExposure: boolean;
   lineCount: number;
   lineWidth: number;
   blendMode: BlendMode;
   opacity: number;
-  colorMix: number;
-  tintColor: string;
-  glow: number;
+  // Gamma curve applied to the per-line video color in the fragment shader.
+  // 1.0 = linear pass-through. > 1 brightens midtones; < 1 darkens. Lets a
+  // single knob lift or crush the line color without bloom.
+  gamma: number;
   resolution: number;
   weightR: number;
   weightG: number;
@@ -26,7 +39,12 @@ export interface RuttEtraParams {
 }
 
 export const DEFAULT_PARAMS: RuttEtraParams = {
-  displacement: 2.0,
+  // Max height — the displacement at lum = 1.0 (i.e. the brightest scene
+  // pixel when auto-exposure is on). Range tightened from the old [-10, 10]
+  // because lum is now a normalized 0-1 quantity rather than a raw luminance.
+  displacement: 1.0,
+  exposure: 0.0,
+  autoExposure: true,
   // Number of scan-line *rows* in the geometry. With real line geometry the
   // sweet spot is much lower than the old fragment-stripe trick (which could
   // afford 512 because the lines were just texture-space stripes on one mesh).
@@ -39,9 +57,7 @@ export const DEFAULT_PARAMS: RuttEtraParams = {
   // white from the side because of overdraw, but matches the original look.
   blendMode: "solid",
   opacity: 1.0,
-  colorMix: 1.0,
-  tintColor: "#00ff88",
-  glow: 0.3,
+  gamma: 1.0,
   // Vertex samples per scan line (more = smoother depth profile along each
   // line). 384 ≈ enough to track per-pixel detail of a 720p source.
   resolution: 384,

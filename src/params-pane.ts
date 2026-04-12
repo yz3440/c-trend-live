@@ -43,12 +43,22 @@ export function createParamsPane(
       .on("change", (ev: { value: RuttEtraParams[K] }) => setParam(key, ev.value));
   };
 
-  // Displacement — 4 sliders: global scaler + per-channel contribution
+  // Displacement / exposure / channel-mix.
+  // - "Max Height" is the displacement at the brightest scene pixel (lum=1).
+  //   Negative inverts the bright/dark relationship.
+  // - "Exposure" is an EV stop applied before the scene-range remap.
+  // - "Auto Exposure" tracks the live frame's pixel min/max so the brightest
+  //   thing on screen always pegs at lum=1.
+  // - R/G/B contributions normalize against each other (sum of |w| = 1), so
+  //   they're relative ratios. Negative weights are allowed and produce signed
+  //   luminance (e.g. R - G isolation).
   const dispFolder = pane.addFolder({ title: "Displacement" });
-  bind(dispFolder, "displacement", { min: -10, max: 10, step: 0.01, label: "Amount" });
-  bind(dispFolder, "weightR",      { min: -1, max: 1, step: 0.001, label: "R Contrib" });
-  bind(dispFolder, "weightG",      { min: -1, max: 1, step: 0.001, label: "G Contrib" });
-  bind(dispFolder, "weightB",      { min: -1, max: 1, step: 0.001, label: "B Contrib" });
+  bind(dispFolder, "displacement",  { min: -2, max: 2, step: 0.01, label: "Max Height" });
+  bind(dispFolder, "exposure",      { min: -3, max: 3, step: 0.01, label: "Exposure (EV)" });
+  bind(dispFolder, "autoExposure",  { label: "Auto Exposure" });
+  bind(dispFolder, "weightR",       { min: -1, max: 1, step: 0.001, label: "R Contrib" });
+  bind(dispFolder, "weightG",       { min: -1, max: 1, step: 0.001, label: "G Contrib" });
+  bind(dispFolder, "weightB",       { min: -1, max: 1, step: 0.001, label: "B Contrib" });
 
   // Warp — topology transform + twists
   const warpFolder = pane.addFolder({ title: "Warp" });
@@ -84,15 +94,11 @@ export function createParamsPane(
 
   // Color
   const colorFolder = pane.addFolder({ title: "Color" });
-  bind(colorFolder, "opacity",  { min: 0, max: 1, step: 0.01, label: "Opacity" });
-  bind(colorFolder, "colorMix", { min: 0, max: 1, step: 0.01, label: "Video ↔ Tint" });
-  // Tweakpane auto-detects color strings; explicit input type for safety.
-  colorFolder
-    .addBinding(state, "tintColor", { label: "Tint", view: "color" })
-    .on("change", (ev: { value: string }) => setParam("tintColor", ev.value));
-  // "Glow" is a per-pixel luminance multiplier in the fragment shader — bright
-  // pixels get brighter, no spatial bleed. For an actual halo see Bloom below.
-  bind(colorFolder, "glow", { min: 0, max: 2, step: 0.01, label: "Glow" });
+  bind(colorFolder, "opacity", { min: 0, max: 1, step: 0.01, label: "Opacity" });
+  // Gamma curve on the per-line video color (no spatial bleed). > 1 lifts
+  // midtones (brighter); < 1 crushes them (darker). For an actual halo, see
+  // the Bloom folder below.
+  bind(colorFolder, "gamma", { min: 0.2, max: 3, step: 0.01, label: "Gamma" });
 
   // Bloom — a real postprocess pass over the whole framebuffer. Bound directly
   // to the live BloomEffect / EffectPass instances (no signal round-trip), the

@@ -44,6 +44,9 @@ function applyBlendMode(material: THREE.Material, mode: BlendMode): void {
 interface RuttUniforms {
   uVideoTexture: { value: THREE.Texture };
   uDisplacement: { value: number };
+  uExposure: { value: number };
+  uSceneMin: { value: number };
+  uSceneMax: { value: number };
   uChannelWeights: { value: THREE.Vector3 };
   uVideoAspect: { value: number };
   uTime: { value: number };
@@ -55,9 +58,7 @@ interface RuttUniforms {
   uSineYFreq: { value: number };
   uSineAmp: { value: number };
   uSineSpeed: { value: number };
-  uTintColor: { value: THREE.Color };
-  uColorMix: { value: number };
-  uGlow: { value: number };
+  uGamma: { value: number };
 }
 
 export class RuttEtra {
@@ -68,6 +69,15 @@ export class RuttEtra {
   private videoTexture: THREE.VideoTexture;
   private params: RuttEtraParams;
   private videoAspect: number;
+
+  // Auto-exposure: one-shot calibration. The first frame after a stream
+  // becomes ready (or after the user toggles autoExposure on) gets sampled
+  // into a hidden 32×32 canvas; uSceneMin/Max are set directly from that
+  // sample and then held fixed. Toggling the param off → on re-arms the
+  // sample, as does a video aspect change (which signals a stream switch).
+  private sampleCanvas: HTMLCanvasElement | null = null;
+  private sampleCtx: CanvasRenderingContext2D | null = null;
+  private needsAutoExposureSample = true;
 
   constructor(videoElement: HTMLVideoElement, params?: Partial<RuttEtraParams>) {
     this.params = { ...DEFAULT_PARAMS, ...params };
@@ -90,6 +100,11 @@ export class RuttEtra {
     this.uniforms = {
       uVideoTexture: { value: this.videoTexture },
       uDisplacement: { value: this.params.displacement },
+      uExposure: { value: this.params.exposure },
+      // Default to identity remap. update() will overwrite when autoExposure
+      // is on; setParameter("autoExposure", false) restores these defaults.
+      uSceneMin: { value: 0.0 },
+      uSceneMax: { value: 1.0 },
       uChannelWeights: {
         value: new THREE.Vector3(
           this.params.weightR,
@@ -107,9 +122,7 @@ export class RuttEtra {
       uSineYFreq: { value: this.params.sineYFreq },
       uSineAmp: { value: this.params.sineAmp },
       uSineSpeed: { value: this.params.sineSpeed },
-      uTintColor: { value: new THREE.Color(this.params.tintColor) },
-      uColorMix: { value: this.params.colorMix },
-      uGlow: { value: this.params.glow },
+      uGamma: { value: this.params.gamma },
     };
 
     this.material = this.createMaterial();
@@ -126,7 +139,7 @@ export class RuttEtra {
   // Material: a stock LineMaterial whose vertex/fragment shaders we patch via
   // onBeforeCompile to (a) replace the instanceStart/End reads with our own
   // ruttEtraDeform() function, and (b) override gl_FragColor to apply our
-  // tint/glow color pipeline.
+  // gamma color pipeline.
   // -------------------------------------------------------------------------
   private createMaterial(): LineMaterial {
     const mat = new LineMaterial({
@@ -260,6 +273,21 @@ export class RuttEtra {
       case "displacement":
         this.uniforms.uDisplacement.value = value as number;
         break;
+      case "exposure":
+        this.uniforms.uExposure.value = value as number;
+        break;
+      case "autoExposure":
+        if (value as boolean) {
+          // Re-arm the one-shot sample. The next update() with a ready video
+          // frame will recalibrate uSceneMin/Max.
+          this.needsAutoExposureSample = true;
+        } else {
+          // Snap back to identity remap so the manual exposure stop is the
+          // only thing affecting brightness while auto is off.
+          this.uniforms.uSceneMin.value = 0.0;
+          this.uniforms.uSceneMax.value = 1.0;
+        }
+        break;
       case "lineCount":
         this.rebuildGeometry();
         break;
@@ -272,14 +300,8 @@ export class RuttEtra {
       case "opacity":
         this.material.opacity = value as number;
         break;
-      case "colorMix":
-        this.uniforms.uColorMix.value = value as number;
-        break;
-      case "tintColor":
-        this.uniforms.uTintColor.value.set(value as string);
-        break;
-      case "glow":
-        this.uniforms.uGlow.value = value as number;
+      case "gamma":
+        this.uniforms.uGamma.value = value as number;
         break;
       case "weightR":
         this.uniforms.uChannelWeights.value.x = value as number;
@@ -330,17 +352,95 @@ export class RuttEtra {
   update(): void {
     // VideoTexture auto-updates from the video element on each render.
     // If the video aspect changed (e.g. stream switch), update the uniform —
-    // no geometry rebuild needed since the X-scale lives entirely in the shader.
+    // no geometry rebuild needed since the X-scale lives entirely in the
+    // shader — and re-arm the one-shot auto exposure sample.
     const video = this.videoTexture.image as HTMLVideoElement;
     if (video.videoWidth && video.videoHeight) {
       const newAspect = video.videoWidth / video.videoHeight;
       if (Math.abs(newAspect - this.videoAspect) > 0.01) {
         this.videoAspect = newAspect;
         this.uniforms.uVideoAspect.value = newAspect;
+        this.needsAutoExposureSample = true;
       }
     }
     // Push the wall clock to the shader so animated wave/noise effects advance.
     this.uniforms.uTime.value = performance.now() / 1000;
+
+    // Auto-exposure: one-shot calibration. The flag is set on construction,
+    // on stream switches (aspect change above), and on toggling the param
+    // off → on. We try every frame until the video has actual pixels, then
+    // sample once and clear the flag.
+    if (this.params.autoExposure && this.needsAutoExposureSample) {
+      if (this.sampleSceneRange()) {
+        this.needsAutoExposureSample = false;
+      }
+    }
+  }
+
+  /**
+   * Read pixel min/max luminance from the live video frame using a small
+   * offscreen canvas, and write the result directly to uSceneMin / uSceneMax.
+   * Mirrors the same weighted-channel-then-normalize math the vertex shader
+   * does so the calibration matches what the shader actually consumes for
+   * displacement.
+   *
+   * Returns true if a sample was taken, false if the video isn't ready yet
+   * (so the caller can keep retrying on subsequent frames).
+   *
+   * Sampling cost is dominated by drawImage; the inner loop over 1024 RGBA
+   * tuples is ~10µs on any laptop. CORS exceptions are caught silently — we
+   * report failure as "true" in that case so we don't keep retrying forever.
+   */
+  private sampleSceneRange(): boolean {
+    const video = this.videoTexture.image as HTMLVideoElement;
+    if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
+      return false;
+    }
+
+    if (!this.sampleCanvas) {
+      this.sampleCanvas = document.createElement("canvas");
+      this.sampleCanvas.width = 32;
+      this.sampleCanvas.height = 32;
+      this.sampleCtx = this.sampleCanvas.getContext("2d", { willReadFrequently: true });
+    }
+    const ctx = this.sampleCtx;
+    if (!ctx) return true;
+
+    try {
+      ctx.drawImage(video, 0, 0, 32, 32);
+      const imageData = ctx.getImageData(0, 0, 32, 32);
+      const data = imageData.data;
+      const wR = this.params.weightR;
+      const wG = this.params.weightG;
+      const wB = this.params.weightB;
+      const weightMag = Math.max(Math.abs(wR) + Math.abs(wG) + Math.abs(wB), 1e-4);
+      const expGain = Math.pow(2, this.params.exposure);
+
+      let mn = Infinity;
+      let mx = -Infinity;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i] / 255;
+        const g = data[i + 1] / 255;
+        const b = data[i + 2] / 255;
+        const lum = ((r * wR + g * wG + b * wB) / weightMag) * expGain;
+        if (lum < mn) mn = lum;
+        if (lum > mx) mx = lum;
+      }
+      // Guard against degenerate single-color frames (mn == mx) — keep a tiny
+      // gap so the shader's range divisor stays well-conditioned.
+      if (mx - mn < 1e-3) {
+        const center = (mn + mx) * 0.5;
+        mn = center - 5e-4;
+        mx = center + 5e-4;
+      }
+      this.uniforms.uSceneMin.value = mn;
+      this.uniforms.uSceneMax.value = mx;
+      return true;
+    } catch {
+      // Tainted canvas (CORS) — auto-exposure silently gives up. Return true
+      // so the caller doesn't keep retrying forever.
+      return true;
+    }
   }
 
   getParams(): RuttEtraParams {

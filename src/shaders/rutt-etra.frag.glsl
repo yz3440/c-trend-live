@@ -3,21 +3,20 @@
 // This file is *not* a complete fragment shader — it's a chunk of GLSL prepended
 // into three's stock LineMaterial fragment shader (see rutt-etra.ts onBeforeCompile).
 // LineMaterial owns the line antialiasing, endcap discards, dashing, etc.; we
-// only override the final color so the line shows the source video color, the
-// configurable tint, and the per-pixel glow.
+// only override the final color so the line shows the source video color
+// passed through a single gamma curve.
 
-uniform vec3 uTintColor;
-uniform float uColorMix;
-uniform float uGlow;
+uniform float uGamma;
 
 varying vec3 vRuttColor;
 varying float vRuttLum;
 
-// Override LineMaterial's flat diffuse with a per-vertex video color blended
-// against the tint, then apply a luminance-keyed brighten. Alpha comes from
-// LineMaterial's own AA / opacity calculation, so we just pass it through.
+// Override LineMaterial's flat diffuse with the per-vertex video color, gamma-
+// curved. uGamma > 1 brightens midtones (lifts shadows toward the highlights);
+// uGamma < 1 crushes midtones toward black; uGamma == 1 is a pass-through.
+// pow() preserves hue per-channel because all three channels share the same
+// exponent. Alpha comes from LineMaterial's own AA / opacity calculation.
 vec3 ruttEtraColor() {
-  vec3 c = mix(uTintColor, vRuttColor, uColorMix);
-  c *= 1.0 + uGlow * vRuttLum;
-  return c;
+  vec3 c = max(vRuttColor, vec3(0.0));
+  return pow(c, vec3(1.0 / max(uGamma, 1e-4)));
 }
