@@ -5,7 +5,7 @@
 // It declares the uniforms / varyings the deformation pipeline needs and defines
 // the `ruttEtraDeform()` function that maps a UV coordinate to a deformed
 // world-space position by sampling the video texture and running the
-// warp → displacement → wave → twist pipeline.
+// warp → displacement → twist pipeline.
 
 uniform sampler2D uVideoTexture;
 uniform float uDisplacement;   // max height (signed) at lum = 1
@@ -22,11 +22,6 @@ uniform float uWarpAmount;
 uniform float uTwistY;
 uniform float uTwistRadial;
 
-// Wave
-uniform float uSineXFreq;
-uniform float uSineYFreq;
-uniform float uSineAmp;
-uniform float uSineSpeed;
 
 // Per-segment endpoint outputs (one set per corner; LineMaterial picks based on
 // position.y < 0.5 in the host vertex shader, then linearly interpolates across
@@ -116,13 +111,7 @@ vec3 ruttEtraDeform(vec2 uv, out vec3 colOut, out float lumOut) {
   // displaces by exactly +uDisplacement.
   basePos += baseNormal * (lum * uDisplacement);
 
-  // ---- 4. Sine wave modulation --------------------------------------------
-  float sineMod = uSineAmp
-    * sin(uv.x * uSineXFreq * TAU_RE + uTime * uSineSpeed)
-    * sin(uv.y * uSineYFreq * TAU_RE + uTime * uSineSpeed);
-  basePos += baseNormal * sineMod;
-
-  // ---- 5. Twist (rotate XY around Z axis) ---------------------------------
+  // ---- 4. Twist (rotate XY around Z axis) ---------------------------------
   // Y-based gives a towel-wring; radial-based gives a spiral. They sum.
   float twistAngle = uTwistY * (uv.y - 0.5) + uTwistRadial * length(uv - vec2(0.5));
   float c = cos(twistAngle);

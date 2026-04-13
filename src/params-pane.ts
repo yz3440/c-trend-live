@@ -33,8 +33,8 @@ export function createParamsPane(
     autoRotateSpeed: number;
   } = {
     ...DEFAULT_PARAMS,
-    autoRotate: false,
-    autoRotateSpeed: 1.0,
+    autoRotate: true,
+    autoRotateSpeed: 0.1,
   };
 
   const bind = <K extends keyof RuttEtraParams>(folder: any, key: K, opts: any) => {
@@ -74,13 +74,6 @@ export function createParamsPane(
   bind(warpFolder, "warpAmount",  { min: 0, max: 1, step: 0.001, label: "Amount" });
   bind(warpFolder, "twistY",      { min: -Math.PI, max: Math.PI, step: 0.001, label: "Twist Y" });
   bind(warpFolder, "twistRadial", { min: -Math.PI, max: Math.PI, step: 0.001, label: "Twist Radial" });
-
-  // Wave — sine modulation along the surface normal
-  const waveFolder = pane.addFolder({ title: "Wave" });
-  bind(waveFolder, "sineXFreq", { min: 0, max: 20, step: 0.01, label: "X Freq" });
-  bind(waveFolder, "sineYFreq", { min: 0, max: 20, step: 0.01, label: "Y Freq" });
-  bind(waveFolder, "sineAmp",   { min: 0, max: 2, step: 0.001, label: "Amplitude" });
-  bind(waveFolder, "sineSpeed", { min: -5, max: 5, step: 0.01, label: "Speed" });
 
   // Lines — count = number of scan rows, samples = vertices per row, width = px
   const linesFolder = pane.addFolder({ title: "Lines" });
@@ -155,6 +148,8 @@ export function createParamsPane(
 
   // Camera (orbit controls — not a shader uniform, lives outside the params signal)
   const camFolder = pane.addFolder({ title: "Camera" });
+  controls.autoRotate = state.autoRotate;
+  controls.autoRotateSpeed = state.autoRotateSpeed;
   camFolder
     .addBinding(state, "autoRotate", { label: "Auto Rotate" })
     .on("change", (ev: { value: boolean }) => {

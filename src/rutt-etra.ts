@@ -54,10 +54,6 @@ interface RuttUniforms {
   uWarpAmount: { value: number };
   uTwistY: { value: number };
   uTwistRadial: { value: number };
-  uSineXFreq: { value: number };
-  uSineYFreq: { value: number };
-  uSineAmp: { value: number };
-  uSineSpeed: { value: number };
   uGamma: { value: number };
 }
 
@@ -118,10 +114,6 @@ export class RuttEtra {
       uWarpAmount: { value: this.params.warpAmount },
       uTwistY: { value: this.params.twistY },
       uTwistRadial: { value: this.params.twistRadial },
-      uSineXFreq: { value: this.params.sineXFreq },
-      uSineYFreq: { value: this.params.sineYFreq },
-      uSineAmp: { value: this.params.sineAmp },
-      uSineSpeed: { value: this.params.sineSpeed },
       uGamma: { value: this.params.gamma },
     };
 
@@ -326,18 +318,6 @@ export class RuttEtra {
         break;
       case "twistRadial":
         this.uniforms.uTwistRadial.value = value as number;
-        break;
-      case "sineXFreq":
-        this.uniforms.uSineXFreq.value = value as number;
-        break;
-      case "sineYFreq":
-        this.uniforms.uSineYFreq.value = value as number;
-        break;
-      case "sineAmp":
-        this.uniforms.uSineAmp.value = value as number;
-        break;
-      case "sineSpeed":
-        this.uniforms.uSineSpeed.value = value as number;
         break;
     }
   }
