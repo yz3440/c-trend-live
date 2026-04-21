@@ -22,8 +22,9 @@ Opens a clean stage at `http://localhost:3000`.
 | `Esc` | Return to the stage    |
 | `M`   | Toggle MIDI learn      |
 
-MIDI learn: press `M`, touch a Tweakpane knob, wiggle a CC — binding
-persists across sessions.
+MIDI learn: press `M`, touch a Tweakpane knob, wiggle a CC — binding persists across sessions.
+
+Made for [Recreating the Past](https://rtp.media.mit.edu/) at the MIT Media Lab, taught by Zach Lieberman.
 
 ## Tech stack
 
