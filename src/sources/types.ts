@@ -10,6 +10,8 @@ export interface Camera {
   thumbnail?: string;
   streamType: StreamType;
   streamUrl?: string;
+  /** Optional human-facing URL (e.g. the source's page for this camera). */
+  pageUrl?: string;
 }
 
 export interface Source {

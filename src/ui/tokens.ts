@@ -1,5 +1,5 @@
 /**
- * Shared structural tokens for Earth Cam Synth UI.
+ * Shared structural tokens for C-Trend Live UI.
  *
  * Colors stay inline — they're expressive choices, not system abstractions.
  * These tokens cover the mechanical stuff that should never drift between
@@ -18,3 +18,10 @@ export const RADIUS = 3;
 
 // ── Blur (for floating surfaces) ────────────────────────────────────────────
 export const BLUR = "blur(6px)";
+
+// ── Accent ──────────────────────────────────────────────────────────────────
+// The one expressive color that shows up across interactive highlights — the
+// selected camera row, the MIDI learn border, the MIDI activity indicator.
+// Centralised so those touchpoints stay coherent even as individual components
+// evolve.
+export const ACCENT = "#00ff88";

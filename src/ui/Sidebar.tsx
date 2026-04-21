@@ -21,14 +21,30 @@ export function Sidebar() {
       <div
         style={{
           padding: "12px 12px 10px",
-          fontSize: 12,
-          letterSpacing: 0.8,
-          textTransform: "uppercase",
-          fontWeight: 600,
           borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
         }}
       >
-        Earth Cam Synth
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: 0.8,
+            textTransform: "uppercase",
+            fontWeight: 600,
+          }}
+        >
+          C-Trend Live
+        </div>
+        <div
+          style={{
+            marginTop: 2,
+            fontSize: 10,
+            letterSpacing: 0.4,
+            color: "rgba(255, 255, 255, 0.45)",
+            fontStyle: "italic",
+          }}
+        >
+          after Vasulka's C-Trend, 1974
+        </div>
       </div>
       <SearchBox />
       <CameraList />

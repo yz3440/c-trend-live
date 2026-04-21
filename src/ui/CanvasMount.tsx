@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
-import { canvasMountEl, videoPreviewMountEl, presentMode } from "../store";
+import { canvasMountEl, videoPreviewMountEl, stageMode } from "../store";
 import { LocalTime } from "./LocalTime";
 
 /**
@@ -41,7 +41,7 @@ export function CanvasMount() {
           left: 12,
           zIndex: 5,
           pointerEvents: "none",
-          display: presentMode.value ? "none" : "flex",
+          display: stageMode.value ? "none" : "flex",
           flexDirection: "column",
           alignItems: "flex-start",
         }}

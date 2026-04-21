@@ -27,12 +27,18 @@ import {
   thumbnails,
   status,
   params,
-  presentMode,
+  stageMode,
   canvasMountEl,
   paramsMountEl,
   videoPreviewMountEl,
+  bloomParams,
+  toneMappingMode,
+  cameraAutoRotate,
+  cameraAutoRotateSpeed,
 } from "./store";
 import { DEFAULT_BLOOM, type RuttEtraParams } from "./types";
+import { registerTriggerHandlers } from "./params-dispatch";
+import { startEngine as startMidiEngine, setLearning, midiLearning } from "./midi";
 
 // --- Mount Preact app first so the grid cells exist before we try to attach ---
 const uiRoot = document.getElementById("ui-root")!;
@@ -141,14 +147,46 @@ effect(() => {
 effect(() => {
   const host = paramsMountEl.value;
   if (!host) return;
-  const pane = createParamsPane(host, controls, {
-    onScreenshot: takeScreenshot,
-    bloom: bloomEffect,
-    bloomPass,
-    toneMapping: toneMappingEffect,
-    toneMappingPass,
-  });
+  const pane = createParamsPane(host);
   return () => pane.dispose();
+});
+
+// --- Effect: drive bloom / tone mapping / camera from signals --------------
+// These used to be mutated directly from Tweakpane change callbacks. Lifting
+// them into signals lets MIDI (or any future driver) update these and have
+// the Tweakpane sliders track automatically.
+effect(() => {
+  const b = bloomParams.value;
+  bloomPass.enabled = b.enabled;
+  bloomEffect.intensity = b.intensity;
+  bloomEffect.luminanceMaterial.threshold = b.threshold;
+  bloomEffect.luminanceMaterial.smoothing = b.smoothing;
+  bloomEffect.mipmapBlurPass.radius = b.radius;
+});
+effect(() => {
+  const mode = toneMappingMode.value;
+  toneMappingPass.enabled = mode !== "off";
+  if (mode === "aces") toneMappingEffect.mode = ToneMappingMode.ACES_FILMIC;
+});
+effect(() => {
+  controls.autoRotate = cameraAutoRotate.value;
+});
+effect(() => {
+  controls.autoRotateSpeed = cameraAutoRotateSpeed.value;
+});
+
+// --- Wire trigger-kind params so buttons (and MIDI) can fire them ----------
+registerTriggerHandlers({
+  resetCamera: () => controls.reset(),
+  toggleStage: () => {
+    stageMode.value = !stageMode.value;
+  },
+  takeScreenshot,
+});
+
+// --- Start the MIDI engine (requests permission, subscribes to device) -----
+startMidiEngine().catch((err) => {
+  console.warn("MIDI engine failed to start:", err);
 });
 
 // --- Effect: re-parent the live video preview when its host appears or the player swaps ---
@@ -301,22 +339,27 @@ function takeScreenshot(): void {
   composer.render();
   const dataUrl = renderer.domElement.toDataURL("image/png");
   const link = document.createElement("a");
-  link.download = `earth-cam-synth-${Date.now()}.png`;
+  link.download = `c-trend-live-${Date.now()}.png`;
   link.href = dataUrl;
   link.click();
 }
 
-// --- Present-mode keyboard shortcuts ---------------------------------------
-// P toggles, Escape exits. Ignore when the focus is on a text input so users
-// can still type in the search box.
+// --- Stage / peek keyboard shortcuts ---------------------------------------
+// Tab peeks the panels; Escape returns to the clean stage. M toggles MIDI
+// learn. Ignore when focus is on a text input so users can still type in the
+// search box.
 window.addEventListener("keydown", (e) => {
   const target = e.target as HTMLElement | null;
   const tag = target?.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
-  if (e.key === "p" || e.key === "P") {
-    presentMode.value = !presentMode.value;
-  } else if (e.key === "Escape" && presentMode.value) {
-    presentMode.value = false;
+  if (e.key === "Tab") {
+    e.preventDefault();
+    stageMode.value = !stageMode.value;
+  } else if (e.key === "m" || e.key === "M") {
+    setLearning(!midiLearning.value);
+  } else if (e.key === "Escape") {
+    if (midiLearning.value) setLearning(false);
+    else if (!stageMode.value) stageMode.value = true;
   }
 });
 

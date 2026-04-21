@@ -1,6 +1,7 @@
 import { signal, computed } from "@preact/signals";
 import type { Camera, Source } from "./sources/types";
-import { DEFAULT_PARAMS, type RuttEtraParams } from "./types";
+import { DEFAULT_BLOOM, DEFAULT_PARAMS, type BloomParams, type RuttEtraParams } from "./types";
+import type { ParamId } from "./params-registry";
 
 export type SourceStatus = "idle" | "loading" | "ready" | "error";
 
@@ -41,10 +42,28 @@ export function setThumbnail(camId: string, dataUrl: string): void {
 export const params = signal<RuttEtraParams>({ ...DEFAULT_PARAMS });
 export const status = signal<string>("Ready");
 
-// Present mode — when true, AppLayout collapses sidebar/params/statusbar so the
-// canvas can fill the window. Toggled by the "P" key, the Escape key (exit only),
-// the Tweakpane button, and the floating exit button overlaid on the canvas.
-export const presentMode = signal<boolean>(false);
+// Bloom, tone mapping, and orbit controls used to be mutated directly from
+// Tweakpane callbacks — which meant nothing else (e.g. MIDI) could drive them
+// without the Tweakpane slider falling out of sync. Lifting them into signals
+// makes every driver (UI, MIDI, future automation) equal citizens: the signal
+// is the source of truth, Tweakpane and the renderer both listen via effect().
+export const bloomParams = signal<BloomParams>({ ...DEFAULT_BLOOM });
+export type ToneMappingMode = "off" | "aces";
+export const toneMappingMode = signal<ToneMappingMode>("aces");
+export const cameraAutoRotate = signal<boolean>(true);
+export const cameraAutoRotateSpeed = signal<number>(0.1);
+
+// The last Tweakpane control the user interacted with. MIDI learn reads this
+// to know which parameter to bind when an incoming CC/note arrives. Cleared
+// after a bind completes.
+export const lastTouchedParamId = signal<ParamId | null>(null);
+
+// Stage mode — when true (the default), AppLayout collapses sidebar/params/
+// statusbar so the canvas fills the window as a clean stage. There is no
+// Browse/Perform mode switch: this is the only "mode," and it's just about
+// whether the panels are visible. Toggled by the Tab key (peek), Escape (back
+// to stage), the Tweakpane trigger, and the floating stage-overlay button.
+export const stageMode = signal<boolean>(true);
 
 // Grid layout — column widths in px. Reactive so the splitter can drag them.
 export const leftPanelWidth = signal<number>(280);

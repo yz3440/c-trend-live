@@ -6,9 +6,17 @@ export function CameraListItem({ cam }: { cam: Camera }) {
   const isSelected = selectedCamId.value === cam.id;
   const thumb = thumbnails.value[cam.id] ?? cam.thumbnail;
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => {
         selectedCamId.value = cam.id;
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          selectedCamId.value = cam.id;
+        }
       }}
       style={{
         display: "flex",
@@ -19,7 +27,6 @@ export function CameraListItem({ cam }: { cam: Camera }) {
         background: isSelected
           ? "rgba(0, 255, 136, 0.12)"
           : "transparent",
-        border: "none",
         borderLeft: isSelected
           ? "2px solid #00ff88"
           : "2px solid transparent",
@@ -86,6 +93,32 @@ export function CameraListItem({ cam }: { cam: Camera }) {
           </span>
         )}
       </span>
-    </button>
+      {cam.pageUrl && (
+        <a
+          href={cam.pageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open on EarthCam"
+          aria-label="Open on EarthCam"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            flexShrink: 0,
+            padding: "2px 4px",
+            color: "rgba(255, 255, 255, 0.45)",
+            textDecoration: "none",
+            fontSize: 12,
+            lineHeight: 1,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "#00ff88";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "rgba(255, 255, 255, 0.45)";
+          }}
+        >
+          ↗
+        </a>
+      )}
+    </div>
   );
 }

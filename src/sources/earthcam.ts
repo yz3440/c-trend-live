@@ -258,6 +258,7 @@ export const earthcamSource: Source = {
       location: { city: s.city, country: s.country },
       timezone: lookupTimezone(s.city, s.country),
       streamType: "hls",
+      pageUrl: `https://www.earthcam.com/js/video/embed.php?vid=${encodeURIComponent(s.id)}`,
     }));
   },
 
