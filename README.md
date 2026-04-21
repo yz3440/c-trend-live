@@ -2,6 +2,8 @@
 
 A browser VJ rig for the world's webcams, inspired by the way Vasulka did it in 1974.
 
+![Screenshot of C-Trend Live](./assets/c-trend-live-demo.gif)
+
 Pick any live EarthCam — a Las Vegas welcome sign, 3 AM Times Square, a Botswana waterhole. Run it through a GPU Rutt/Etra synthesizer, the same luminance-to-3D-wireframe move Woody Vasulka pulled on his CRT in _[C-Trend](https://www.fondation-langlois.org/html/e/page.php?NumPage=478)_.
 
 Play around with the parameters like a synth using MIDI controllers, keys and mouse too.
