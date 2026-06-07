@@ -4,7 +4,7 @@ import { Splitter } from "./Splitter";
 import { CanvasMount } from "./CanvasMount";
 import { ParamsPanel } from "./ParamsPanel";
 import { StatusBar } from "./StatusBar";
-import { FONT_BASE, FONT_SMALL, FONT_MONO_SMALL, RADIUS, BLUR } from "./tokens";
+import { FONT_BASE } from "./tokens";
 
 /**
  * The full-window grid:
@@ -15,16 +15,17 @@ import { FONT_BASE, FONT_SMALL, FONT_MONO_SMALL, RADIUS, BLUR } from "./tokens";
  *   |  cams   |::|  (3D scene)    |::| panel    |
  *   |         |  |                |  |          |
  *   +---------+--+----------------+--+----------+
- *   | StatusBar (full width)                     |
+ *   | StatusBar (full width, always present)     |
  *   +--------------------------------------------+
  *
  * The two `::` columns are draggable splitters bound to the leftPanelWidth /
  * rightPanelWidth signals. The center column is `1fr` so it absorbs everything
  * left over and stays the canvas's home.
  *
- * Stage mode (the default): side columns and splitter tracks collapse to 0,
- * StatusBar is hidden, and a small overlay exposes a peek button plus the
- * Vasulka credit line. Tab peeks the panels in; Esc returns to the stage.
+ * Stage mode (the default): side columns and splitter tracks collapse to 0 so
+ * the canvas fills the window. The StatusBar stays put in both modes and holds
+ * the panel toggle, so the controls are always one keystroke (Tab) or one click
+ * away. Esc returns to the stage.
  */
 export function AppLayout() {
   const lw = leftPanelWidth.value;
@@ -39,7 +40,7 @@ export function AppLayout() {
         position: "fixed",
         inset: 0,
         display: "grid",
-        gridTemplateRows: stage ? "1fr" : "1fr auto",
+        gridTemplateRows: "1fr auto",
         gridTemplateColumns: "100%",
         background: "#000",
         color: "rgba(255, 255, 255, 0.9)",
@@ -60,49 +61,8 @@ export function AppLayout() {
         <CanvasMount />
         {stage ? <div /> : <Splitter width={rightPanelWidth} side="right" min={200} max={500} />}
         <ParamsPanel />
-        {stage && (
-          <>
-            <button
-              onClick={() => {
-                stageMode.value = false;
-              }}
-              style={{
-                position: "absolute",
-                top: 12,
-                right: 12,
-                zIndex: 10,
-                padding: "6px 10px",
-                background: "rgba(12, 12, 14, 0.55)",
-                border: "1px solid rgba(255, 255, 255, 0.10)",
-                borderRadius: RADIUS,
-                color: "rgba(255, 255, 255, 0.9)",
-                font: FONT_SMALL,
-                cursor: "pointer",
-                backdropFilter: BLUR,
-                WebkitBackdropFilter: BLUR,
-              }}
-              title="Peek UI (Tab)"
-            >
-              Peek · Tab
-            </button>
-            <div
-              style={{
-                position: "absolute",
-                bottom: 10,
-                right: 14,
-                zIndex: 10,
-                font: FONT_MONO_SMALL,
-                color: "rgba(255, 255, 255, 0.4)",
-                pointerEvents: "none",
-                userSelect: "none",
-              }}
-            >
-              C-Trend Live &nbsp;·&nbsp; after Vasulka, 1974
-            </div>
-          </>
-        )}
       </div>
-      {!stage && <StatusBar />}
+      <StatusBar />
     </div>
   );
 }

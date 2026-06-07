@@ -1,5 +1,6 @@
 import { visibleCameras, activeSrcId, sourceStatus, sourceError } from "../store";
 import { CameraListItem } from "./CameraListItem";
+import { INK } from "./tokens";
 
 
 export function CameraList() {
@@ -20,8 +21,8 @@ export function CameraList() {
         <div style={{ padding: 10, color: "rgba(255, 255, 255, 0.5)" }}>Loading…</div>
       )}
       {status === "error" && (
-        <div style={{ padding: 10, color: "#ff6b6b" }}>
-          {err ?? "Failed to load source"}
+        <div style={{ padding: 10, color: INK }}>
+          {`! ${err ?? "Failed to load source"}`}
         </div>
       )}
       {status === "ready" && cams.length === 0 && (

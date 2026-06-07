@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { effect, signal } from "@preact/signals";
+import { effect, signal, untracked } from "@preact/signals";
 import { h, render } from "preact";
 import {
   EffectComposer,
@@ -28,6 +28,7 @@ import {
   status,
   params,
   stageMode,
+  aboutOpen,
   canvasMountEl,
   paramsMountEl,
   videoPreviewMountEl,
@@ -144,10 +145,15 @@ effect(() => {
 });
 
 // --- Effect: mount Tweakpane into the right panel when its host appears ---
+// `untracked` is essential: createParamsPane reads params/bloom/toneMapping/etc.
+// signals synchronously to seed its initial state. Without untracked, this
+// effect would subscribe to all of them and dispose+recreate the whole pane on
+// every value change — which kills slider drags and resets the panel scroll.
+// The inner effects createParamsPane sets up keep their own reactivity.
 effect(() => {
   const host = paramsMountEl.value;
   if (!host) return;
-  const pane = createParamsPane(host);
+  const pane = untracked(() => createParamsPane(host));
   return () => pane.dispose();
 });
 
@@ -175,11 +181,19 @@ effect(() => {
   controls.autoRotateSpeed = cameraAutoRotateSpeed.value;
 });
 
+// Returning to the clean stage always drops the about view, so reopening the
+// panels lands back on the camera list rather than a stuck about panel.
+function enterStage(): void {
+  stageMode.value = true;
+  aboutOpen.value = false;
+}
+
 // --- Wire trigger-kind params so buttons (and MIDI) can fire them ----------
 registerTriggerHandlers({
   resetCamera: () => controls.reset(),
   toggleStage: () => {
-    stageMode.value = !stageMode.value;
+    if (stageMode.value) stageMode.value = false;
+    else enterStage();
   },
   takeScreenshot,
 });
@@ -354,12 +368,15 @@ window.addEventListener("keydown", (e) => {
   if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
   if (e.key === "Tab") {
     e.preventDefault();
-    stageMode.value = !stageMode.value;
+    if (stageMode.value) stageMode.value = false;
+    else enterStage();
   } else if (e.key === "m" || e.key === "M") {
     setLearning(!midiLearning.value);
   } else if (e.key === "Escape") {
-    if (midiLearning.value) setLearning(false);
-    else if (!stageMode.value) stageMode.value = true;
+    // Peel one layer at a time: about panel, then MIDI learn, then the stage.
+    if (aboutOpen.value) aboutOpen.value = false;
+    else if (midiLearning.value) setLearning(false);
+    else if (!stageMode.value) enterStage();
   }
 });
 

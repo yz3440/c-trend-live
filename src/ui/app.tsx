@@ -1,5 +1,11 @@
 import { AppLayout } from "./AppLayout";
+import { GlobalStyle } from "./GlobalStyle";
 
 export function App() {
-  return <AppLayout />;
+  return (
+    <>
+      <GlobalStyle />
+      <AppLayout />
+    </>
+  );
 }

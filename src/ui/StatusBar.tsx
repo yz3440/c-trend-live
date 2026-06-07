@@ -1,5 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
-import { status } from "../store";
+import { aboutOpen, stageMode, status } from "../store";
 import {
   midiAvailable,
   midiLastMessageAt,
@@ -7,7 +7,7 @@ import {
   midiMapping,
   midiStatusMessage,
 } from "../midi";
-import { ACCENT, FONT_MONO_SMALL } from "./tokens";
+import { ACCENT, FONT_MONO_SMALL, HAIRLINE, INK_DIM, INK_FAINT, PANEL_BG } from "./tokens";
 
 /**
  * Transient glow: returns true briefly after a MIDI message arrives so the
@@ -32,8 +32,55 @@ function useMidiPulse(): boolean {
   return pulsing;
 }
 
+/** A bare text control sized to the status bar; brightens to accent on hover. */
+function BarButton({
+  label,
+  title,
+  onClick,
+}: {
+  label: string;
+  title: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      class="ctl-focusable"
+      type="button"
+      title={title}
+      onClick={onClick}
+      style={{
+        appearance: "none",
+        background: "transparent",
+        border: "none",
+        padding: 0,
+        margin: 0,
+        cursor: "pointer",
+        font: "inherit",
+        color: INK_DIM,
+        whiteSpace: "nowrap",
+        flex: "0 0 auto",
+        transition: "color 140ms ease-out",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.color = ACCENT;
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.color = INK_DIM;
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+/**
+ * Full-width footer, present in every mode (including the clean stage) so the
+ * panels are always one keystroke away. Left: the live status line. Right: the
+ * about entry, the panel toggle (mirrors the Tab key), and MIDI state.
+ */
 export function StatusBar() {
   const pulse = useMidiPulse();
+  const stage = stageMode.value;
   const deviceConnected = midiMapping.value.deviceId !== null;
   const learning = midiLearning.value;
   const available = midiAvailable.value;
@@ -41,25 +88,26 @@ export function StatusBar() {
   const dotColor = pulse
     ? ACCENT
     : deviceConnected
-    ? "rgba(0, 255, 136, 0.55)"
-    : "rgba(255, 255, 255, 0.2)";
+    ? "rgba(255, 255, 255, 0.55)"
+    : INK_FAINT;
 
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 14,
         padding: "6px 12px",
-        borderTop: "1px solid rgba(255, 255, 255, 0.06)",
-        background: "rgba(12, 12, 14, 0.95)",
-        color: "rgba(255, 255, 255, 0.5)",
+        borderTop: `1px solid ${HAIRLINE}`,
+        background: PANEL_BG,
+        color: INK_DIM,
         font: FONT_MONO_SMALL,
       }}
     >
       <span
         style={{
           flex: "1 1 auto",
+          minWidth: 0,
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -67,6 +115,28 @@ export function StatusBar() {
       >
         {midiStatusMessage.value ?? status.value}
       </span>
+
+      <BarButton
+        label="about"
+        title="About C-Trend Live"
+        onClick={() => {
+          stageMode.value = false;
+          aboutOpen.value = true;
+        }}
+      />
+      <BarButton
+        label={`Tab to ${stage ? "show" : "hide"} panels`}
+        title="Toggle panels (Tab)"
+        onClick={() => {
+          if (stage) {
+            stageMode.value = false;
+          } else {
+            stageMode.value = true;
+            aboutOpen.value = false;
+          }
+        }}
+      />
+
       {learning && (
         <span
           style={{

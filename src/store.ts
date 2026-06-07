@@ -65,6 +65,11 @@ export const lastTouchedParamId = signal<ParamId | null>(null);
 // to stage), the Tweakpane trigger, and the floating stage-overlay button.
 export const stageMode = signal<boolean>(true);
 
+// About-view visibility. When true, the sidebar body swaps the camera list for
+// the about writeup. Opened from the sidebar nameplate toggle or the status-bar
+// "about" (which also un-collapses the panels); closed by the toggle or Escape.
+export const aboutOpen = signal<boolean>(false);
+
 // Grid layout — column widths in px. Reactive so the splitter can drag them.
 export const leftPanelWidth = signal<number>(280);
 export const rightPanelWidth = signal<number>(260);
