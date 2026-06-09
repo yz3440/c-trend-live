@@ -218,6 +218,10 @@ effect(() => {
 });
 
 // --- Register sources and seed the camera list ---
+// Preferred camera to open on first load. "Times Square Robo 3" (EarthCam
+// id 15559.flv) has the most reliable availability; fall back to the first
+// camera in the list if it isn't present.
+const DEFAULT_CAM_ID = "15559.flv";
 sources.value = SOURCES;
 for (const src of SOURCES) {
   setSourceStatus(src.id, "loading");
@@ -229,7 +233,8 @@ for (const src of SOURCES) {
         activeSrcId.value = src.id;
       }
       if (selectedCamId.value === null && cams.length > 0 && activeSrcId.value === src.id) {
-        selectedCamId.value = cams[0].id;
+        const preferred = cams.find((c) => c.id === DEFAULT_CAM_ID);
+        selectedCamId.value = preferred?.id ?? cams[0].id;
       }
     })
     .catch((err: Error) => {
