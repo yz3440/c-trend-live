@@ -36,6 +36,7 @@ import {
   toneMappingMode,
   cameraAutoRotate,
   cameraAutoRotateSpeed,
+  syphonEnabled,
 } from "./store";
 import { DEFAULT_BLOOM, type RuttEtraParams } from "./types";
 import { registerTriggerHandlers } from "./params-dispatch";
@@ -380,6 +381,43 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// --- Syphon output tap (desktop only) --------------------------------------
+// On the Electron build the preload injects window.syphon. While the "Syphon
+// Output" toggle is on we read the freshly-composited frame straight off the
+// canvas — the composer's final pass renders to the default framebuffer, so
+// right after composer.render() the bytes are there (preserveDrawingBuffer is
+// already set, and the proxied streams keep the canvas untainted). The RGBA
+// buffer goes to the native publisher via the bridge. Capped to SYPHON_FPS so
+// the synchronous readPixels stall stays modest on large retina buffers. On the
+// web window.syphon is undefined and this is a cheap no-op every frame.
+const SYPHON_FPS = 30;
+let syphonBuf: Uint8ClampedArray | null = null;
+let lastSyphonPublish = 0;
+
+function publishSyphonFrame(now: number): void {
+  const bridge = window.syphon;
+  if (!bridge || !syphonEnabled.value) return;
+  if (now - lastSyphonPublish < 1000 / SYPHON_FPS) return;
+  lastSyphonPublish = now;
+
+  const gl = renderer.getContext();
+  const w = gl.drawingBufferWidth;
+  const h = gl.drawingBufferHeight;
+  if (w === 0 || h === 0) return;
+
+  const length = w * h * 4;
+  if (!syphonBuf || syphonBuf.length !== length) syphonBuf = new Uint8ClampedArray(length);
+  // RGBA, bottom-up — the publisher flips it so clients see it upright.
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, syphonBuf);
+  bridge.publish(syphonBuf, w, h);
+}
+
+// Tear the native server down when output is switched off so the source
+// disappears from clients; it's recreated lazily on the next publish.
+effect(() => {
+  if (!syphonEnabled.value) window.syphon?.stop();
+});
+
 // --- Animation loop ---
 function animate(): void {
   requestAnimationFrame(animate);
@@ -388,5 +426,6 @@ function animate(): void {
     ruttEtra.update();
   }
   composer.render();
+  publishSyphonFrame(performance.now());
 }
 animate();

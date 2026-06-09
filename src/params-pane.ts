@@ -5,7 +5,9 @@ import {
   bloomParams,
   cameraAutoRotate,
   cameraAutoRotateSpeed,
+  hasSyphon,
   params,
+  syphonEnabled,
   toneMappingMode,
 } from "./store";
 import {
@@ -216,6 +218,23 @@ export function createParamsPane(container: HTMLElement): Pane {
   // don't need it (Tweakpane already has the value) and a refresh mid-drag
   // would reset the pointer state and break draggability.
   const dispose: Array<() => void> = [];
+
+  // ── Desktop-only: Syphon output (Electron injects window.syphon) ─────────
+  // A button toggle, not a checkbox: unambiguous and theme-proof. It drives +
+  // reflects the syphonEnabled signal through the normal dispatcher, so MIDI
+  // and automation still work. Created after the registry folders so it lands
+  // at the bottom of the pane.
+  if (hasSyphon.value) {
+    const outputFolder = pane.addFolder({ title: "Output" });
+    const syphonTitle = (on: boolean): string => `Syphon Output: ${on ? "ON" : "OFF"}`;
+    const syphonBtn = outputFolder.addButton({ title: syphonTitle(syphonEnabled.value) });
+    syphonBtn.on("click", () => setParamById("output.syphon", !syphonEnabled.value, "ui"));
+    dispose.push(
+      effect(() => {
+        syphonBtn.title = syphonTitle(syphonEnabled.value);
+      })
+    );
+  }
 
   dispose.push(
     effect(() => {

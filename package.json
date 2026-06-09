@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "node server.js",
+    "electron:dev": "ELECTRON_RENDERER_URL=http://localhost:3000 electron electron/main.cjs",
+    "electron:start": "vite build && electron electron/main.cjs",
+    "electron:spike": "electron electron/spike.cjs"
   },
   "dependencies": {
     "@preact/signals": "^2.0.1",
@@ -23,8 +26,13 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.10.0",
     "@types/three": "^0.172.0",
+    "electron": "^42.3.3",
+    "node-syphon": "^1.5.0",
     "typescript": "^5.7.0",
     "vite": "^6.3.1",
     "vite-plugin-glsl": "^1.3.1"
-  }
+  },
+  "trustedDependencies": [
+    "node-syphon"
+  ]
 }

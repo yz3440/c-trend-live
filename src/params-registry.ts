@@ -10,13 +10,16 @@ export type BloomParamId = `bloom.${keyof BloomParams}`;
 export type ToneParamId = "toneMapping.mode";
 export type CameraParamId = "camera.autoRotate" | "camera.autoRotateSpeed";
 export type TriggerParamId = "camera.reset" | "view.present" | "view.screenshot";
+// Desktop-only (Electron + Syphon). See SYPHON_DESCRIPTOR below.
+export type OutputParamId = "output.syphon";
 
 export type ParamId =
   | ShaderParamId
   | BloomParamId
   | ToneParamId
   | CameraParamId
-  | TriggerParamId;
+  | TriggerParamId
+  | OutputParamId;
 
 export type EnumOption = { readonly label: string; readonly value: string };
 
@@ -129,13 +132,39 @@ export const PARAM_DESCRIPTORS: readonly ParamDescriptor[] = [
   { id: "camera.autoRotateSpeed", kind: "number", group: "Camera", label: "Rotate Speed", min: 0.1, max: 5, step: 0.1 },
   { id: "camera.reset", kind: "trigger", group: "Camera", label: "Reset View" },
 
-  // ── View / Export ──────────────────────────────────────────────────────
-  { id: "view.present", kind: "trigger", group: "View", label: "Peek UI (Tab)" },
+  // ── Export ─────────────────────────────────────────────────────────────
   { id: "view.screenshot", kind: "trigger", group: "Export", label: "Screenshot" },
 ];
 
+/**
+ * Desktop-only descriptor for the Syphon output toggle. Kept OUT of
+ * PARAM_DESCRIPTORS so the web build never sees it; the Electron build renders
+ * the control itself (a button toggle in params-pane.ts, gated on hasSyphon).
+ * It's registered here purely so getDescriptor() / MIDI can resolve the id like
+ * any other boolean param.
+ */
+export const SYPHON_DESCRIPTOR: BooleanDescriptor = {
+  id: "output.syphon",
+  kind: "boolean",
+  group: "Output",
+  label: "Syphon Output",
+};
+
+/**
+ * The stage peek trigger. Kept OUT of PARAM_DESCRIPTORS so it no longer renders
+ * as a button in the pane (the Tab key toggles the stage directly). It's
+ * registered here purely so getDescriptor() / MIDI can resolve the id and keep
+ * existing MIDI bindings working.
+ */
+export const PEEK_DESCRIPTOR: TriggerDescriptor = {
+  id: "view.present",
+  kind: "trigger",
+  group: "View",
+  label: "Peek UI (Tab)",
+};
+
 const DESCRIPTOR_BY_ID: Record<string, ParamDescriptor> = Object.fromEntries(
-  PARAM_DESCRIPTORS.map((d) => [d.id, d])
+  [...PARAM_DESCRIPTORS, SYPHON_DESCRIPTOR, PEEK_DESCRIPTOR].map((d) => [d.id, d])
 );
 
 export function getDescriptor(id: ParamId): ParamDescriptor | undefined {

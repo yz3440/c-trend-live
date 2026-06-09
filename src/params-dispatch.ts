@@ -13,6 +13,7 @@ import {
   cameraAutoRotateSpeed,
   lastTouchedParamId,
   params,
+  syphonEnabled,
   toneMappingMode,
   type ToneMappingMode,
 } from "./store";
@@ -90,6 +91,8 @@ export function setParamById(id: ParamId, value: unknown, origin: DispatchOrigin
       cameraAutoRotate.value = value as boolean;
     } else if (id === "camera.autoRotateSpeed") {
       cameraAutoRotateSpeed.value = value as number;
+    } else if (id === "output.syphon") {
+      syphonEnabled.value = value as boolean;
     } else if (isShaderKey(id)) {
       setShader(id, value as never);
     } else {
@@ -146,6 +149,7 @@ export function getParamValue(id: ParamId): unknown {
   if (id === "toneMapping.mode") return toneMappingMode.value;
   if (id === "camera.autoRotate") return cameraAutoRotate.value;
   if (id === "camera.autoRotateSpeed") return cameraAutoRotateSpeed.value;
+  if (id === "output.syphon") return syphonEnabled.value;
   if (isShaderKey(id)) return params.value[id];
   return undefined;
 }

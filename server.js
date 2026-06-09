@@ -1,6 +1,6 @@
 import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -63,45 +63,68 @@ async function resolve(vid) {
 }
 
 // ── Express app ─────────────────────────────────────────────────────
-const app = express();
+// Factory so the same app can be served standalone (`npm start`) or embedded
+// in the Electron main process (see electron/main.cjs).
+export function createServer() {
+  const app = express();
 
-// API: resolve EarthCam stream IDs
-app.get("/api/earthcam-resolve", async (req, res) => {
-  const vid = req.query.vid;
-  res.setHeader("content-type", "application/json");
-  if (!vid) {
-    return res.status(400).json({ error: "missing vid" });
-  }
-  try {
-    const stream = await resolve(vid);
-    res.json({ stream });
-  } catch (e) {
-    res.status(502).json({ error: e?.message ?? String(e) });
-  }
-});
+  // API: resolve EarthCam stream IDs
+  app.get("/api/earthcam-resolve", async (req, res) => {
+    const vid = req.query.vid;
+    res.setHeader("content-type", "application/json");
+    if (!vid) {
+      return res.status(400).json({ error: "missing vid" });
+    }
+    try {
+      const stream = await resolve(vid);
+      res.json({ stream });
+    } catch (e) {
+      res.status(502).json({ error: e?.message ?? String(e) });
+    }
+  });
 
-// Proxy: HLS stream segments (needs Referer header)
-app.use(
-  "/api/stream",
-  createProxyMiddleware({
-    target: "https://videos-3.earthcam.com",
-    changeOrigin: true,
-    pathRewrite: { "^/api/stream": "" },
-    headers: {
-      Referer: "https://www.earthcam.com/",
-      Origin: "https://www.earthcam.com",
-    },
-  }),
-);
+  // Proxy: HLS stream segments (needs Referer header)
+  app.use(
+    "/api/stream",
+    createProxyMiddleware({
+      target: "https://videos-3.earthcam.com",
+      changeOrigin: true,
+      pathRewrite: { "^/api/stream": "" },
+      headers: {
+        Referer: "https://www.earthcam.com/",
+        Origin: "https://www.earthcam.com",
+      },
+    }),
+  );
 
-// Serve built static files
-app.use(express.static(join(__dirname, "dist")));
+  // Serve built static files
+  app.use(express.static(join(__dirname, "dist")));
 
-// SPA fallback
-app.get("/{*splat}", (_req, res) => {
-  res.sendFile(join(__dirname, "dist", "index.html"));
-});
+  // SPA fallback
+  app.get("/{*splat}", (_req, res) => {
+    res.sendFile(join(__dirname, "dist", "index.html"));
+  });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  return app;
+}
+
+// Start the app on a loopback port and resolve the actual bound port. Used by
+// the Electron shell with port 0 (ephemeral) so it never clashes with a web
+// instance on 3000. Returns { port, close }.
+export function listen(port = 0) {
+  return new Promise((done) => {
+    const srv = createServer().listen(port, "127.0.0.1", () => {
+      const addr = srv.address();
+      done({ port: addr.port, close: () => srv.close() });
+    });
+  });
+}
+
+// ── Standalone entry (`npm start` / Docker) ─────────────────────────
+// Only auto-listen when run directly, so importing this module (Electron)
+// doesn't start a second server. Binds all interfaces on PORT, as before.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  createServer().listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}

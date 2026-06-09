@@ -53,6 +53,15 @@ export const toneMappingMode = signal<ToneMappingMode>("aces");
 export const cameraAutoRotate = signal<boolean>(true);
 export const cameraAutoRotateSpeed = signal<number>(0.1);
 
+// Desktop (Electron) Syphon output. `hasSyphon` is the capability gate: the
+// Electron preload injects window.syphon; the web build never does. It decides
+// whether the Syphon control is registered/shown. `syphonEnabled` is the live
+// on/off the render loop reads each frame to decide whether to publish.
+export const hasSyphon = signal<boolean>(
+  typeof window !== "undefined" && !!window.syphon?.available
+);
+export const syphonEnabled = signal<boolean>(false);
+
 // The last Tweakpane control the user interacted with. MIDI learn reads this
 // to know which parameter to bind when an incoming CC/note arrives. Cleared
 // after a bind completes.
