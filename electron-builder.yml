@@ -1,0 +1,45 @@
+appId: place.yufeng.ctrendlive
+productName: C-Trend Live
+directories:
+  output: release
+
+files:
+  - electron/**
+  - server.js
+  - dist/**
+
+# asar is ON (electron-builder's recommended default), but everything our own
+# code touches is UNPACKED to real files on disk:
+#   - electron/** + server.js: so main.cjs's dynamic `import()` of the ESM
+#     server.js resolves a real path (ESM-from-asar is buggy) and server.js's
+#     __dirname-based `express.static(dist)` points at the unpacked dist.
+#   - dist/**: served by that express.static.
+#   - node-syphon: native .node + Syphon.framework must be loose for dlopen/fork
+#     (packing the framework loose under asar:false tripped electron-builder's
+#     symlink copier).
+# Only express/http-proxy-middleware (+ deps) stay inside the asar archive,
+# loaded via asar-aware CommonJS require from the unpacked server.js.
+asar: true
+asarUnpack:
+  - electron/**
+  - server.js
+  - dist/**
+  - "**/node_modules/node-syphon/**"
+
+mac:
+  target:
+    - target: dmg
+      arch: arm64 # node-syphon's native binding is arm64-only (Apple Silicon)
+  category: public.app-category.video
+  # Unsigned build: ad-hoc sign ("-") so the app launches on Apple Silicon, and
+  # turn hardened runtime OFF so library validation doesn't block the
+  # externally-signed Syphon.framework / node-syphon addon. No entitlements
+  # needed without hardened runtime. (Notarization later flips both of these.)
+  identity: "-"
+  hardenedRuntime: false
+  # icon: build/icon.icns   # optional — omit to use the default Electron icon
+
+publish:
+  provider: github
+  owner: yz3440
+  repo: c-trend-live

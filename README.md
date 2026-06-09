@@ -26,6 +26,8 @@ npm run electron:start   # builds the renderer, then launches the desktop app
 
 In the right panel's **Output** folder, flip **Syphon Output** on — a source named `C-Trend Live` shows up in any Syphon client, carrying the live frame at the window's resolution. For development with hot reload, run `npm run dev` and `npm run electron:dev` in two terminals. To sanity-check a Syphon receiver with a test pattern, run `npm run electron:spike`.
 
+**Download:** grab the latest `.dmg` from [Releases](https://github.com/yz3440/c-trend-live/releases). **Apple Silicon only** (M1 or newer). The build is unsigned, so on first launch macOS will block it — right-click the app → **Open** (then **Open** again), or run `xattr -dr com.apple.quarantine "/Applications/C-Trend Live.app"`.
+
 The web build is unaffected: the Output control only appears under Electron (it keys off the preload's `window.syphon` bridge), and the desktop app reuses the same Express server (`server.js`) for the EarthCam proxy.
 
 ## Keys

@@ -1,0 +1,33 @@
+name: Release DMG
+
+# Push a version tag (e.g. v1.0.0) to build and publish the macOS DMG.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # electron-builder needs this to create the release + upload the DMG
+
+jobs:
+  build:
+    # Apple Silicon runner — required: node-syphon's native binding is arm64-only.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Installs the optional node-syphon and runs its postinstall, which
+      # downloads Syphon.framework (the runner has curl/unzip).
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npx electron-builder --mac dmg --arm64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Unsigned build — don't hunt for a Developer ID in the keychain.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
