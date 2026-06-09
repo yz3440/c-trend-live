@@ -7,7 +7,7 @@ on:
       - "v*"
 
 permissions:
-  contents: write # electron-builder needs this to create the release + upload the DMG
+  contents: write # needed to create the release + upload the DMG
 
 jobs:
   build:
@@ -26,8 +26,16 @@ jobs:
 
       - run: npm run build
 
-      - run: npx electron-builder --mac dmg --arm64 --publish always
+      # Build the DMG only. We do NOT let electron-builder publish: it uploads
+      # artifacts in parallel and each upload races to "create" the GitHub
+      # release, producing duplicate drafts with the assets split across them.
+      - run: npx electron-builder --mac dmg --arm64 --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Unsigned build — don't hunt for a Developer ID in the keychain.
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_IDENTITY_AUTO_DISCOVERY: "false" # unsigned — don't hunt for a Developer ID
+
+      # Publish atomically: one draft release for the tag, with the DMG attached.
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: release/*.dmg
+          fail_on_unmatched_files: true

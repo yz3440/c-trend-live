@@ -1,6 +1,6 @@
 {
   "name": "c-trend-live",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A browser VJ rig for the world's webcams — a GPU Rutt/Etra synthesizer with Syphon output.",
   "author": "Yufeng Zhao",
   "license": "MIT",
